@@ -15,6 +15,7 @@ Author:		Rojait00
 
 /*######################### Debug Options #######################################*/
 //#define DEBUG
+#define ESP01
 
 #ifdef DEBUG
 	#define Sprintln(a) (Serial.println(a)) // Use Serial
@@ -23,7 +24,12 @@ Author:		Rojait00
 #else	
 	#define Sprintln(a) // Don't print
 	#define Sprint(a) // Don't print
-	#define getInput() (Serialread()) // (kpd.getKey()) // use keypad if your ESP has got enough pins free
+
+	#ifdef ESP01
+		#define getInput() (Serialread()) 
+	#else
+		#define getInput() (kpd.getKey()) // use keypad if your ESP has got enough pins free
+	#endif // ESP01
 #endif // DEBUG
 
 
