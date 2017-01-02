@@ -10,7 +10,8 @@ Display: state(playing/paused), artist, song and volume
 
 
 
-
+#Details
 
 Projektbeschreibung: (German) http://www2.hs-esslingen.de/~rojait00/content/Project2/
+
 //Translation on request
