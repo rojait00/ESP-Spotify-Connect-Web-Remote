@@ -15,7 +15,8 @@ Author:		Rojait00
 
 /*######################### Debug Options #######################################*/
 //#define DEBUG
-#define ESP01
+#define noButtons
+//#define noDisplay
 
 #ifdef DEBUG
 	#define Sprintln(a) (Serial.println(a)) // Use Serial
@@ -25,7 +26,7 @@ Author:		Rojait00
 	#define Sprintln(a) // Don't print
 	#define Sprint(a) // Don't print
 
-	#ifdef ESP01
+	#ifdef noButtons
 		#define getInput() (Serialread()) 
 	#else
 		#define getInput() (kpd.getKey()) // use keypad if your ESP has got enough pins free
@@ -47,13 +48,14 @@ byte ROWS = 2; // Two rows
 byte COLS = 3; // Three columns
 char keys[2][3] = {
 	{ '-','X','+' },  //volume down, (un)mute, volume up
-	{ 'B','P','N'} }; //back, Play/Pause, next
+	{ 'B','P','N'} }; //back, play/pause, next
 Keypad kpd = Keypad(makeKeymap(keys), Port_rowPins, Port_colPins, ROWS, COLS);
 
-
+#ifndef noDisplay
 /*######################### OLED Display #######################################*/
 SSD1306  display(0x3c, 2, 0);
 OLEDDisplayUi ui(&display);
+#endif // !noDisplay
 
 /*######################### Player Status #######################################*/
 String artist="12345678901234567890";
@@ -74,6 +76,7 @@ String lastAction = "";
 int lastActionMillis = 0;
 bool newDataNeeded = false;
 
+#ifndef noDisplay
 /*######################### User-Interface #######################################*/
 FrameCallback frames[] = { drawState, drawArtist, drawSong, drawVolume };
 int frameCount = 4;
@@ -81,6 +84,7 @@ int frameCount = 4;
 OverlayCallback overlays[] = { topBar };
 int overlaysCount = 1;
 int offset_y = 5;
+#endif // !noDisplay
 
 /*######################### Webserver Specs #######################################*/
 const char* host = "mischpult";
@@ -154,77 +158,11 @@ void handleInput()
 	}
 }
 
-
-/*##################################### Commands ###########################################*/
-///sends "next song"-command
-void next()
-{
-	newArtist = false;
-	newSong = false;
-	lastAction = "next";
-	httpRequestGET(urls.NEXT);
-}
-
-///sends "play"-command
-void play()
-{
-	httpRequestGET(urls.PLAY);
-	lastAction = "play";
-}
-
-///sends "pause"-command
-void pause()
-{
-	httpRequestGET(urls.PAUSE);
-	lastAction = "pause";
-}
-
-///sends "prev. song"-command
-void prev()
-{
-	httpRequestGET(urls.PREV);
-	newArtist = false;
-	newSong = false;
-	lastAction = "back";
-}
-
-///calls play/pause depending on current state.
-void playPause()
-{
-	if (needNewData())
-		getNewData();
-	delay(1);
-	if (!newPlayState)
-	{
-		String val = getValue(statusValue, "playing");
-		if (val == "true")
-		{
-			playing = true;
-			Sprintln("new State: true");
-		}
-		else
-		{
-			playing = false;
-			Sprintln("new State: false");
-		}
-		newPlayState = true;
-
-	}
-
-	if (playing)
-		pause();
-	else
-		play();
-	playing = !playing;
-	newPlayState = true;
-
-}
-
 /*##################################### HTTP Area ###########################################*/
 ///sends the new volume to the server.
 void setVolume() {
 	Sprintln(String("POST") + urls.VOL);
-	
+
 	if (!newVolume)
 	{
 
@@ -244,7 +182,7 @@ void setVolume() {
 		int outval = map(volume, 0, 100, 2, 65532);
 		outval = outval > 65534 ? 65534 : outval;
 		outval = outval < 0 ? 1 : outval;
-		String PostData = "value=" + String(outval)+ "&";
+		String PostData = "value=" + String(outval) + "&";
 		Sprintln(PostData);
 		client.println("POST /api/playback/volume HTTP/1.1");
 		client.println("Connection: close");
@@ -359,6 +297,74 @@ String httpRequestGET(String url) {
 	return msg;
 }
 
+
+/*##################################### Commands ###########################################*/
+///sends "next song"-command
+void next()
+{
+	newArtist = false;
+	newSong = false;
+	lastAction = "next";
+	httpRequestGET(urls.NEXT);
+}
+
+///sends "play"-command
+void play()
+{
+	httpRequestGET(urls.PLAY);
+	lastAction = "play";
+}
+
+///sends "pause"-command
+void pause()
+{
+	httpRequestGET(urls.PAUSE);
+	lastAction = "pause";
+}
+
+///sends "prev. song"-command
+void prev()
+{
+	httpRequestGET(urls.PREV);
+	newArtist = false;
+	newSong = false;
+	lastAction = "back";
+}
+
+///calls play/pause depending on current state.
+void playPause()
+{
+	if (needNewData())
+		getNewData();
+	delay(1);
+	if (!newPlayState)
+	{
+		String val = getValue(statusValue, "playing");
+		if (val == "true")
+		{
+			playing = true;
+			Sprintln("new State: true");
+		}
+		else
+		{
+			playing = false;
+			Sprintln("new State: false");
+		}
+		newPlayState = true;
+
+	}
+
+	if (playing)
+		pause();
+	else
+		play();
+	playing = !playing;
+	newPlayState = true;
+
+}
+
+
+#ifndef noDisplay
 /*##################################### Draw Screens ###########################################*/
 ///draws a topBar containing the last command.
 void topBar(OLEDDisplay *display, OLEDDisplayUiState* state) {
@@ -474,7 +480,7 @@ void drawString(String str, OLEDDisplay *display, int16_t x, int16_t y)
 		display->drawString(0 + x, (offset_y + 11) + y, str);
 	}
 }
-
+#endif // !noDisplay
 
 /*##################################### String Tools ###########################################*/
 ///returs value of "search" out of v
@@ -526,9 +532,11 @@ int getValueIndex(String v, String search) {
 void setup() {
 	Serial.begin(9600);
 
+#ifndef noDisplay
 	//Display
 	pinMode(0, INPUT);
 	pinMode(2, INPUT);
+#endif // !noDisplay
 
 	// We start by connecting to a WiFi network
 
@@ -558,6 +566,7 @@ void setup() {
 	Sprintln();
 	Sprintln();
 
+#ifndef noDisplay
 	// The ESP is capable of rendering 60fps in 80Mhz mode
 	// but that won't give you much time for anything else
 	// run it in 160Mhz mode or just set it to 30 fps
@@ -588,6 +597,7 @@ void setup() {
 	ui.init();
 
 	display.flipScreenVertically();
+#endif // !noDisplay
 
 	getNewData();
 	delay(1);
@@ -595,10 +605,14 @@ void setup() {
 
 ///gets repeated every frame
 void loop() {
+#ifndef noDisplay
 	int remainingTimeBudget = ui.update();
 
 	//if (remainingTimeBudget > 0)  //If uncommented the UI has got a higher prio than the Code.
+#endif // !noDisplay
+	{
 		loopingCode();
+	}
 	delay(1);
 }
 
