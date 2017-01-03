@@ -34,14 +34,20 @@ Author:		Rojait00
 #endif // DEBUG
 
 
-#define I2C_CLK_Pin 0
-#define I2C_Data_Pin 2
-
 /*######################### WiFi Parameter #######################################*/
 const char* ssid = "B5C4";
 const char* password = "0622527231993956";
 
+#ifndef noDisplay
+/*######################### OLED Display #######################################*/
+const int I2C_CLK_Pin = 0;
+const int I2C_Data_Pin = 2;
 
+SSD1306  display(0x3c,I2C_Data_Pin, I2C_CLK_Pin);
+OLEDDisplayUi ui(&display);
+#endif // !noDisplay
+
+#ifndef noButtons
 /*######################### Keypad Mapping #######################################*/
 byte Port_rowPins[] = { 3,1};
 byte Port_colPins[] = { 5,13,4 };
@@ -51,12 +57,8 @@ char keys[2][3] = {
 	{ '-','X','+' },  //volume down, (un)mute, volume up
 	{ 'B','P','N'} }; //back, play/pause, next
 Keypad kpd = Keypad(makeKeymap(keys), Port_rowPins, Port_colPins, ROWS, COLS);
+#endif // !noButtons
 
-#ifndef noDisplay
-/*######################### OLED Display #######################################*/
-SSD1306  display(0x3c,I2C_Data_Pin, I2C_CLK_Pin);
-OLEDDisplayUi ui(&display);
-#endif // !noDisplay
 
 /*######################### Player Status #######################################*/
 String artist="12345678901234567890";
@@ -539,34 +541,7 @@ void setup() {
 	pinMode(2, INPUT);
 #endif // !noDisplay
 
-	// We start by connecting to a WiFi network
-
-	Sprintln();
-	Sprintln();
-	Sprint("Connecting to ");
-	Sprintln(ssid);
-
-	/* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-	would try to act as both a client and an access-point and could cause
-	network-issues with your other WiFi-devices on your WiFi-network. */
-
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssid, password);
-
-	while (WiFi.status() != WL_CONNECTED) {
-		delay(500);
-		Sprint(".");
-	}
-
-	Sprintln("");
-	Sprintln("WiFi connected");
-	Sprintln("IP address: ");
-	Sprintln(WiFi.localIP());
-
 	
-	Sprintln();
-	Sprintln();
-
 #ifndef noDisplay
 	// The ESP is capable of rendering 60fps in 80Mhz mode
 	// but that won't give you much time for anything else
@@ -598,7 +573,39 @@ void setup() {
 	ui.init();
 
 	display.flipScreenVertically();
+	
+	display.write(String(String("Connecting to ") + String(ssid)).c_str());
 #endif // !noDisplay
+
+	// start connecting to a WiFi network
+
+	Sprintln();
+	Sprintln();
+	Sprint("Connecting to ");
+	Sprintln(ssid);
+
+	/* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
+	would try to act as both a client and an access-point and could cause
+	network-issues with your other WiFi-devices on your WiFi-network. */
+
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssid, password);
+
+	while (WiFi.status() != WL_CONNECTED) {
+		delay(500);
+		Sprint(".");
+	}
+
+	Sprintln("");
+	Sprintln("WiFi connected");
+	Sprintln("IP address: ");
+	Sprintln(WiFi.localIP());
+
+	
+	Sprintln();
+	Sprintln();
+
+
 
 	getNewData();
 	delay(1);
