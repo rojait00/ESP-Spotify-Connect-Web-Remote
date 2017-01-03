@@ -34,7 +34,8 @@ Author:		Rojait00
 #endif // DEBUG
 
 
-
+#define I2C_CLK_Pin 0
+#define I2C_Data_Pin 2
 
 /*######################### WiFi Parameter #######################################*/
 const char* ssid = "B5C4";
@@ -53,7 +54,7 @@ Keypad kpd = Keypad(makeKeymap(keys), Port_rowPins, Port_colPins, ROWS, COLS);
 
 #ifndef noDisplay
 /*######################### OLED Display #######################################*/
-SSD1306  display(0x3c, 2, 0);
+SSD1306  display(0x3c,I2C_Data_Pin, I2C_CLK_Pin);
 OLEDDisplayUi ui(&display);
 #endif // !noDisplay
 
